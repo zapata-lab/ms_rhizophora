@@ -1,0 +1,218 @@
+#####################################################################
+#                           ANALYSIS CODE                           #
+#                                                                   #
+#        Rhizophora mangle in Yucatan (population genetics)         #
+#                                                                   #
+# Code written by the authors and modified from: 10.1111/gcb.14497  #
+#                                                                   #
+#                                                                   #
+#####################################################################
+
+
+# Code Overview
+#  ├── Data Filtering
+#  │     ├── Approach 1         # Filter individuals first then filter SNPs
+#  │     └── Approach 2         # Filter SNPs first then filter individuals)
+#  │
+#  └── Analysis
+#         ├── PCA
+#         ├── Treemix
+#         ├── SNAPP
+#         └── Maverick
+
+
+####################################################
+
+################### Data Filtering #################
+
+####################################################
+
+
+# NOTE: because we already provide the resulting matrices after
+# each filtering step, some  commands to create specific directories
+# to store intermediate and filtered files are commented. In addition,
+# lines specific to our HPC to load modules are commented.
+# To reproduce our analysis from scratch, please uncomment
+
+# load modules - specific for UCLA-HPC
+#module load vcftools
+#module load python3
+#module load treemix
+
+---------------------------------------------------------
+# Approach 1: Filter individuals first then filter SNPs #
+---------------------------------------------------------
+
+# Create new directory for results
+# mkdir -p Filtered_VCFs
+
+# Check which individuals have too much missing data
+vcftools --vcf ipyrad_outfiles/Rmangle_GBS_original.vcf --missing-indv --out Filtered_VCFs/Rmangle_GBS_original
+
+# Select individuals represented in at least 25% of the SNPs.
+bin/select_low_rep_individuals.sh Filtered_VCFs/Rmangle_GBS_original.imiss 0.74257425742574257425 | sed 's|^| --remove-indv |g' |tr -d '\n' > indivs_to_remove
+
+# Remove individuals with too much missing data
+vcftools --vcf ipyrad_outfiles/Rmangle_GBS_original.vcf $indivs_to_remove --out Filtered_VCFs/Rmangle_GBS_original_indiv75 --recode
+
+# Remove SNPs with too much missing data, < Minor Allele Frequency, and not biallelic
+vcftools --vcf Filtered_VCFs/Rmangle_GBS_original_indiv75.recode.vcf  --max-missing 0.80 --maf 0.03 --out Filtered_VCFs/Rmangle_GBS_original_indiv75_miss80_maf03_biallele --recode --max-alleles 2
+
+# Keep only the Center SNP and discard all other to avoid LD issues
+# Our final VCF file is now produced.
+python3 bin/vcf_parser.py --center-snp -vcf Filtered_VCFs/Rmangle_GBS_original_indiv75_miss80_maf03_biallele.recode.vcf
+
+
+# THE OUTPUT VCF FILE HAS 2121 SNPs
+
+/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\//\/\/\/
+
+---------------------------------------------------------
+# Approach 1: Filter SNPs first then filter individuals #
+---------------------------------------------------------
+
+# Remove SNPs with too much missing data, < Minor Allele Frequency, and not biallelic
+vcftools --vcf ipyrad_outfiles/Rmangle_GBS_original.vcf  --max-missing 0.80 --maf 0.03 --out Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele --recode --max-alleles 2
+
+
+# Check which individuals have too much missing data
+vcftools --vcf Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele.recode.vcf --missing-indv --out Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele
+
+# Select individuals with more than 75% missing data
+bin/select_low_rep_individuals.sh Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele.imiss 0.24752475247524752475 | sed 's|^| --remove-indv |g' |tr -d '\n' > indivs_to_remove_after_loci_removal
+
+# Remove individuals with too much missing data
+vcftools --vcf Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele.recode.vcf $indivs_to_remove_after_loci_removal --out Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75 --recode
+
+# Keep only the Center SNP and discard all other to avoid LD issues
+# Our final VCF file is now produced.
+python3 bin/vcf_parser.py --center-snp -vcf Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75.recode.vcf
+
+
+# THE OUTPUT VCF FILE HAS 1802 SNPs
+
+
+############################################
+
+############## Analysis ####################
+
+############################################
+
+# Preliminary analyses showed that analyses with both matrices resulting
+# from approach 1 and approach 2 generated identical/similar results.
+# Approach 2 retained more individuals (yet fewer loci) making our computationally-
+# intense analyses more feasible. Therefore we present the code for analyses
+# using matrix from approach 2. To run all analyses with the matrix from
+# approach 1, just change the file names accordingly
+
+---------------------------------------------------------
+# Approach 2: Filter SNPs first then filter individuals) #
+---------------------------------------------------------
+
+#######
+# PCA #
+#######
+
+# Create a directory to store outputs
+#mkdir -p Analyses/PCA/out_files
+
+# Perform a PCA with the VCF file from Approach 2
+Rscript bin/snp_pca_static.R Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP.vcf PCA_approach2 Popfiles/pop_file_approach2.txt | grep -A 4 '$$eigenval' |tail -n +2 > Analyses/PCA/out_files/Rmangle_GBS_original_eigenvectors_approach2.txt
+
+
+##########
+# TREEMIX #
+###########
+
+# Create treemix input file from vcf file
+python bin/vcf2treemix.py -vcf Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP.vcf -pop Popfiles/pop_file_approach2_treemix.txt
+
+# Output file needs to be compressed for Treemix:
+gzip Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP.tmix
+
+# Make folder to store results
+#mkdir Analyses/TreeMix
+
+# Change to TreeMix dir and run bash.
+./treemix_bash.sh
+
+# Variance explained
+# run script bin/treemixVarianceExplained.R # Read file for instructions
+
+# Plot results
+# run script bin/plotting_funcs.R # Read file for instructions
+
+
+#########
+# SNAPP #
+#########
+
+# Create a directory to store outputs
+#mkdir Analyses/SNAPP
+
+# Preliminary analysis showed that he matrix was too big and computationally unfeasible. Therefore, We used 2 individuals per population. To choose 2 individuals per population, we chose the 2 individuals per population with most loci. To do this, we first need to sort the .imiss file:
+
+sort -k 5 Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele.imiss
+
+# We chose 2 individuals per population covering different subpopulations, e.g., TermI and II for Terminos. We kept the following samples:
+
+#Cel_A4
+#Cel_B4
+#Chet_C3
+#Chet_C6
+#Mah_II_B3
+#Mah_C1
+#KML2_A3
+#KML1_A2
+#RSP3_A4
+#RSP_D
+#Term_II_F
+#Term_I_F
+#LAG_B2
+#LAG_A2
+#RLG1_A1
+#RLG2_A4
+
+vcftools --vcf Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP.vcf --keep Filtered_VCFs/keep_snapp_approach2.txt --out Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP_2indPop --recode
+
+# Create input file for SNAPP
+
+python bin/vcf2different_formats.py -i Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP_2indPop.recode.vcf -b
+
+# We fixed the nexus file by hand so that the names of samples could be automatically parsed to be assigned to populations
+
+# In Beauti: lambda: alpha 1, beta 3000.
+
+# See SNAPP directory for inout xml file and output trees/log files
+
+
+############
+# MAVERICK #
+############
+
+# Create input files as if they were files for STRUCTURE and then change to Maverick Format
+
+# Create a directory to store outputs.
+#mkdir -p Analyses/Structure/out_files
+
+# Create a SPID from the skeleton
+sed 's|path_to_popfile|./Popfiles/pop_file_approach2.txt|g' SPIDs/skeleton.spid > SPIDs/vcf2structure.spid
+echo "" >> SPIDs/vcf2structure.spid
+echo "WRITER_FORMAT=STRUCTURE" >> SPIDs/vcf2structure.spid
+echo "" >> SPIDs/vcf2structure.spid
+echo "STRUCTURE_WRITER_LOCI_DISTANCE_QUESTION=false" >> SPIDs/vcf2structure.spid
+echo "STRUCTURE_WRITER_DATA_TYPE_QUESTION=SNP" >> SPIDs/vcf2structure.spid
+echo "" >> SPIDs/vcf2structure.spid
+echo "STRUCTURE_WRITER_FAST_FORMAT_QUESTION=true" >> SPIDs/vcf2structure.spid
+
+# Perform the file conversion using PGDSpider_2.1.1.5. I needs to be in your system
+java -Xmx1024m -Xms512m -jar PGDSpider_2.1.1.5/PGDSpider2-cli.jar -inputfile Filtered_VCFs/Rmangle_GBS_original_miss80_maf03_biallele_indiv75CenterSNP.vcf -inputformat VCF -outputfile input_structure_approach2 -outputformat STRUCTURE -spid SPIDs/vcf2structure.spid
+
+# fix for maverick
+cat Analyses/Structure/out_files/input_structure_approach2 | cut -f 1,2,7 | sed 's/ /\t/g' > Analyses/Structure/out_files/input_maverick_approach2.str
+
+# Run maverick in R (Rmaverick)
+
+# run script bin/run_maverick.r # Read file for instructions
+
+/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\//\/\/\/
