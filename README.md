@@ -2,7 +2,9 @@
 
 This repository contains the code and data for the population genetic analyses presented in:
 
-    Aburto-Oropeza O, Burelo-Ramos CM, Ezcurra E, Ezcurra P, Henriquez CL, Vanderplank S, Zapata F. Last interglacial sea levels revealed by a relict inland mangrove ecosystem.
+    Aburto-Oropeza O, Burelo-Ramos CM, Ezcurra E, Ezcurra P, Henriquez CL,
+    Vanderplank S, Zapata F. Last interglacial sea levels revealed by a relict
+    inland mangrove ecosystem.
 
 ## Repository Overview
 
