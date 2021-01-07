@@ -1,0 +1,8 @@
+celestun: Cel_A3 Cel_A4 Cel_B4
+chetumal: Chet_A1 Chet_B1 Chet_B6 Chet_C3 Chet_C6
+kml: KML1_A1 KML1_A3 KML1_A4 KML2_A2 KML2_A3 KML2_A4
+laguna: LAG_A1 LAG_A2 LAG_A3 LAG_A4 LAG_B1 LAG_B2 LAG_B3 LAG_B4
+mahahual: Mah_D2 Mah_II_A2 Mah_II_B1 Mah_II_B2 Mah_II_B3
+ria_lagartos: RLG1_A1 RLG1_A2 RLG1_A3 RLG2_A2 RLG2_A4 RLG2_B1
+rio_san_pedro: RSP3_A1 RSP3_A2 RSP3_A4 RSP3_B1 RSP3_B2 RSP3_B3 RSP4_A1 RSP4_A2 RSP4_A3 RSP4_A4 RSP_C RSP_D RSP_G1
+terminos: Term_II_A Term_II_B Term_II_C Term_II_F Term_I_A Term_I_B Term_I_D Term_I_E Term_I_F Term_I_G 
