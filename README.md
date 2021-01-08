@@ -23,10 +23,11 @@ This repository contains the code and data for the population genetic analyses p
 │                           #   (this list is generated automatically running analysis_code)
 ├── indivs_to_remove_after_loci_removal # List of individuals to filter resulting from approach 2
 │                           #   (this list is generated automatically running analysis_code)
+├── params_ipyrad.txt       # parameters file for ipyrad
 ├── ipyrad_outfiles         # VCF file from data assembly pre-filtering
 ├── Popfiles                # Map individuals -> populations for different analyses
 ├── SPIDs                   # Skeleton for PGDSpider to create input file for Maverick
-└──  analysis_code          # Analysis scripts to filter data and run all analyses
+└── analysis_code          # Analysis scripts to filter data and run all analyses
 ```
 
 ## Dependencies
